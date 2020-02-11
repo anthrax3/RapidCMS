@@ -4,6 +4,25 @@ using RapidCMS.Core.Abstractions.Repositories;
 
 namespace RapidCMS.Core.Abstractions.Config
 {
+    public interface IPageConfig
+    {
+        /// <summary>
+        /// Adds a section to the list of components to draw on this page.
+        /// Use the edit flag to indicate whether this should be the editor or the view variant of the collection.
+        /// </summary>
+        /// <param name="collectionAlias">Alias of a collection</param>
+        /// <param name="edit">Set to true to use the ListEditor, otherwise the ListView is used</param>
+        /// <returns></returns>
+        ICmsConfig AddSection(string collectionAlias, bool edit = false);
+
+        /// <summary>
+        /// Adds a razor component to the list of components to draw on the dashboard, the homepage of the CMS. 
+        /// </summary>
+        /// <param name="customDashboardSectionType">Type of the razor component to draw.</param>
+        /// <returns></returns>
+        ICmsConfig AddSection(Type customDashboardSectionType);
+    }
+
     public interface ICmsConfig : ICollectionConfig
     {
         /// <summary>
@@ -34,20 +53,26 @@ namespace RapidCMS.Core.Abstractions.Config
             where TRepository : IRepository;
 
         /// <summary>
-        /// Adds a section to the list of components to draw on the dashboard, the homepage of the CMS.
-        /// Use the edit flag to indicate whether this should be the editor or the view variant of the collection.
+        /// Adds a page to the CMS.
         /// </summary>
-        /// <param name="collectionAlias">Alias of a collection</param>
-        /// <param name="edit">Set to true to use the ListEditor, otherwise the ListView is used</param>
+        /// <param name="name"></param>
+        /// <param name="configure"></param>
         /// <returns></returns>
-        ICmsConfig AddDashboardSection(string collectionAlias, bool edit = false);
+        IPageConfig AddPage(string name, Action<IPageConfig> configure);
 
         /// <summary>
-        /// Adds a razor component to the list of components to draw on the dashboard, the homepage of the CMS. 
+        /// 
         /// </summary>
-        /// <param name="customDashboardSectionType">Type of the razor component to draw.</param>
+        /// <param name="icon"></param>
+        /// <param name="name"></param>
+        /// <param name="configure"></param>
         /// <returns></returns>
-        ICmsConfig AddDashboardSection(Type customDashboardSectionType);
+        IPageConfig AddPage(string icon, string name, Action<IPageConfig> configure);
+
+        /// <summary>
+        /// The CMS homepage.
+        /// </summary>
+        IPageConfig Dashboard { get; }
 
         /// <summary>
         /// Use this to allow anonymous users to fully use your CMS. This adds a very permissive AuthorizationHandler that allows everything by anyone. 
