@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Components;
 using RapidCMS.Core.Abstractions.Config;
 using RapidCMS.Core.Abstractions.Data;
 using RapidCMS.Core.Abstractions.Repositories;
-using RapidCMS.Core.Enums;
 using RapidCMS.Core.Exceptions;
 using RapidCMS.Core.Extensions;
-using RapidCMS.Core.Models.State;
-using RapidCMS.Core.Repositories;
 
 namespace RapidCMS.Core.Models.Config
 {
@@ -26,12 +24,20 @@ namespace RapidCMS.Core.Models.Config
 
         internal static List<string> CollectionAliases = new List<string>();
 
-        public List<ICollectionConfig> Collections { get; set; } = new List<ICollectionConfig>();
-        internal List<CustomTypeRegistrationConfig> CustomDashboardSectionRegistrations { get; set; } = new List<CustomTypeRegistrationConfig>();
         internal CustomTypeRegistrationConfig? CustomLoginScreenRegistration { get; set; }
         internal CustomTypeRegistrationConfig? CustomLoginStatusRegistration { get; set; }
 
+        public IEnumerable<ICollectionConfig> Collections => CollectionsAndPages.SelectNotNull(x => x.collection);
+        public IEnumerable<IPageConfig> Pages => CollectionsAndPages.SelectNotNull(x => x.page);
+
+        public List<(ICollectionConfig? collection, IPageConfig? page)> CollectionsAndPages { get; set; } = new List<(ICollectionConfig?, IPageConfig?)>
+        {
+            (default, new PageConfig("Dashboard", "apps"))
+        };
+
         public IAdvancedCmsConfig Advanced => AdvancedConfig;
+
+        public IPageConfig Dashboard => CollectionsAndPages.First().page!;
 
         public ICmsConfig SetCustomLoginScreen(Type loginType)
         {
@@ -71,38 +77,6 @@ namespace RapidCMS.Core.Models.Config
             return this;
         }
 
-        public ICmsConfig AddDashboardSection(Type customDashboardSectionType)
-        {
-            if (!customDashboardSectionType.IsSameTypeOrDerivedFrom(typeof(ComponentBase)))
-            {
-                throw new InvalidOperationException($"{nameof(customDashboardSectionType)} must be derived of {nameof(ComponentBase)}.");
-            }
-
-            CustomDashboardSectionRegistrations.Add(new CustomTypeRegistrationConfig(customDashboardSectionType));
-
-            return this;
-        }
-
-        public ICmsConfig AddDashboardSection(string collectionAlias, bool edit = false)
-        {
-            CustomDashboardSectionRegistrations.Add(
-                new CustomTypeRegistrationConfig(
-                    typeof(ICollectionConfig),
-                    new Dictionary<string, object> {
-                        {
-                            "InitialState",
-                            new PageStateModel
-                            {
-                                PageType = PageType.Collection,
-                                UsageType = edit ? UsageType.Edit : UsageType.View,
-                                CollectionAlias = collectionAlias
-                            }
-                        }
-                    }));
-
-            return this;
-        }
-
         public ICollectionConfig<TEntity> AddCollection<TEntity, TRepository>(string alias, string name, Action<ICollectionConfig<TEntity>> configure)
             where TEntity : class, IEntity
             where TRepository : IRepository
@@ -138,9 +112,30 @@ namespace RapidCMS.Core.Models.Config
 
             configure.Invoke(configReceiver);
 
-            Collections.Add(configReceiver);
+            CollectionsAndPages.Add((configReceiver, default));
 
             return configReceiver;
+        }
+
+        public ICmsConfig AddPage(string name, Action<IPageConfig> configure)
+        {
+            return AddPage("document", name, configure);
+        }
+
+        public ICmsConfig AddPage(string icon, string name, Action<IPageConfig> configure)
+        {
+            if (Pages.Any(x => x.Name == name))
+            {
+                throw new InvalidOperationException($"Page with name {name} already exists.");
+            }
+
+            var page = new PageConfig(name, icon);
+
+            configure.Invoke(page);
+
+            CollectionsAndPages.Add((default, page));
+
+            return this;
         }
     }
 }

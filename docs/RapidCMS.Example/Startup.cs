@@ -68,8 +68,13 @@ namespace RapidCMS.Example
                 config.AddMappedCollection();
 
                 // the dashboard can be build up of custom Blazor components, or the ListViews or ListEditors of collections
-                config.AddDashboardSection(typeof(DashboardSection));
-                config.AddDashboardSection("user", edit: true);
+                config.Dashboard.AddSection(typeof(DashboardSection));
+                config.Dashboard.AddSection("user", edit: true);
+
+                config.AddPage("beaker", "Some random page", config =>
+                {
+                    config.AddSection(typeof(CustomSection));
+                });
             });
         }
 

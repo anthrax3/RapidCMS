@@ -9,7 +9,7 @@ namespace RapidCMS.Core.Abstractions.Config
 {
     public interface ICollectionConfig
     {
-        List<ICollectionConfig> Collections { get; }
+        IEnumerable<ICollectionConfig> Collections { get; }
         string Alias { get; }
     }
 

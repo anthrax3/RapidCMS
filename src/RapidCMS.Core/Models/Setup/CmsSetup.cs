@@ -9,7 +9,7 @@ using RapidCMS.Core.Models.Config;
 
 namespace RapidCMS.Core.Models.Setup
 {
-    internal class CmsSetup : ICms, ICollectionResolver, IDashboard, ILogin
+    internal class CmsSetup : ICms, ICollectionResolver, ILogin
     {
         private Dictionary<string, CollectionSetup> _collectionMap { get; set; } = new Dictionary<string, CollectionSetup>();
 
@@ -20,7 +20,7 @@ namespace RapidCMS.Core.Models.Setup
 
             Collections = ConfigProcessingHelper.ProcessCollections(config);
 
-            CustomDashboardSectionRegistrations = config.CustomDashboardSectionRegistrations.ToList(x => new CustomTypeRegistrationSetup(x));
+            Pages = config.Pages.ToList(x => new PageRegistrationSetup(x));
             if (config.CustomLoginScreenRegistration != null)
             {
                 CustomLoginScreenRegistration = new CustomTypeRegistrationSetup(config.CustomLoginScreenRegistration);
@@ -53,7 +53,7 @@ namespace RapidCMS.Core.Models.Setup
         internal bool IsDevelopment { get; set; }
 
         public List<CollectionSetup> Collections { get; set; }
-        internal List<CustomTypeRegistrationSetup> CustomDashboardSectionRegistrations { get; set; }
+        internal List<PageRegistrationSetup> Pages { get; set; }
         internal CustomTypeRegistrationSetup? CustomLoginScreenRegistration { get; set; }
         internal CustomTypeRegistrationSetup? CustomLoginStatusRegistration { get; set; }
 
@@ -70,12 +70,16 @@ namespace RapidCMS.Core.Models.Setup
                 ?? throw new InvalidOperationException($"Failed to find collection with alias {alias}.");
         }
 
-        IEnumerable<ICollectionSetup> ICollectionResolver.GetRootCollections()
+        IPageSetup ICollectionResolver.GetPage(string alias)
         {
-            return Collections;
+            return Pages.First(x => x.Alias == alias);
         }
 
-        IEnumerable<ITypeRegistration> IDashboard.CustomDashboardSectionRegistrations => CustomDashboardSectionRegistrations;
+        IEnumerable<(ICollectionSetup, IPageSetup)> ICollectionResolver.GetRootCollections()
+        {
+            return Collections.Select(x => (x as ICollectionSetup, default(IPageSetup)))!
+                .Union(Pages.Skip(1).Select(x => (default(ICollectionSetup), x as IPageSetup))!);
+        }
 
         ITypeRegistration? ILogin.CustomLoginScreenRegistration => CustomLoginScreenRegistration;
         ITypeRegistration? ILogin.CustomLoginStatusRegistration => CustomLoginStatusRegistration;

@@ -33,7 +33,7 @@ namespace RapidCMS.Core.Models.Config
 
         internal Type RepositoryType { get; set; }
 
-        public List<ICollectionConfig> Collections { get => _collections.Union(InlineCollections).ToList(); }
+        public IEnumerable<ICollectionConfig> Collections { get => _collections.Union(InlineCollections); }
 
         private IEnumerable<CollectionConfig> InlineCollections
         {

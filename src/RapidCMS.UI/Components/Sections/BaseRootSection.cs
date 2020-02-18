@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
+using RapidCMS.Core.Abstractions.Config;
 using RapidCMS.Core.Abstractions.Factories;
 using RapidCMS.Core.Abstractions.Services;
+using RapidCMS.Core.Abstractions.Setup;
 using RapidCMS.Core.Abstractions.State;
 using RapidCMS.Core.Enums;
 using RapidCMS.Core.Exceptions;
+using RapidCMS.Core.Extensions;
 using RapidCMS.Core.Forms;
 using RapidCMS.Core.Models.Response;
 using RapidCMS.Core.Models.State;
@@ -30,6 +33,7 @@ namespace RapidCMS.UI.Components.Sections
 
         protected IEnumerable<ButtonUI>? Buttons { get; set; }
         protected IEnumerable<(EditContext editContext, IEnumerable<SectionUI> sections)>? Sections { get; set; }
+        protected IEnumerable<ITypeRegistration>? PageContents { get; set; }
 
         protected ViewState CurrentViewState => new ViewState(PageState);
 
@@ -61,6 +65,7 @@ namespace RapidCMS.UI.Components.Sections
                 UIResolver = null;
                 ListUI = null;
                 EditContext = null;
+                PageContents = null;
 
                 PageState.ResetState(InitialState);
 
@@ -77,24 +82,36 @@ namespace RapidCMS.UI.Components.Sections
             }
         }
 
-        private Task LoadDataAsync(IEnumerable<string>? entityIds = null)
+        private async Task LoadDataAsync(IEnumerable<string>? entityIds = null)
         {
             if (CurrentState?.PageType == PageType.Node)
             {
-                return LoadNodeDataAsync();
+                await LoadNodeDataAsync();
             }
             else if (CurrentState?.PageType == PageType.Collection)
             {
-                return LoadCollectionDataAsync(entityIds);
+                await LoadCollectionDataAsync(entityIds);
             }
-            else
+
+            // TODO: move these pages off to sub component?
+            else if (CurrentState?.PageType == PageType.Page)
             {
-                return Task.CompletedTask;
+                PageContents = await PresentationService.GetPageAsync(CurrentState.CollectionAlias);
+            }
+            else if (CurrentState?.PageType == PageType.Dashboard)
+            {
+                PageContents = await PresentationService.GetPageAsync("dashboard");
+            }
+            else if (CurrentState?.PageType == PageType.Error)
+            {
+
             }
         }
 
         protected void HandleException(Exception ex)
         {
+            // TODO: use state!
+
             // meh
             if (ex is UnauthorizedAccessException)
             {
@@ -111,6 +128,29 @@ namespace RapidCMS.UI.Components.Sections
 
                 NavigationManager.NavigateTo("/error");
             }
+        }
+
+        protected RenderFragment RenderType(ITypeRegistration section)
+        {
+            return builder =>
+            {
+                var type = section.Type == typeof(ICollectionConfig)
+                    ? typeof(RootSection)
+                    : section.Type;
+
+                builder.OpenComponent(0, type);
+
+                if (section.Parameters != null)
+                {
+                    var index = 1;
+                    section.Parameters.ForEach(kv =>
+                    {
+                        builder.AddAttribute(index++, kv.Key, kv.Value);
+                    });
+                }
+
+                builder.CloseComponent();
+            };
         }
     }
 }

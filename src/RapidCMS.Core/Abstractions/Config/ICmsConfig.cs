@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using RapidCMS.Core.Abstractions.Data;
 using RapidCMS.Core.Abstractions.Repositories;
+using RapidCMS.Core.Models.Config;
 
 namespace RapidCMS.Core.Abstractions.Config
 {
@@ -13,14 +15,22 @@ namespace RapidCMS.Core.Abstractions.Config
         /// <param name="collectionAlias">Alias of a collection</param>
         /// <param name="edit">Set to true to use the ListEditor, otherwise the ListView is used</param>
         /// <returns></returns>
-        ICmsConfig AddSection(string collectionAlias, bool edit = false);
+        IPageConfig AddSection(string collectionAlias, bool edit = false);
 
         /// <summary>
         /// Adds a razor component to the list of components to draw on the dashboard, the homepage of the CMS. 
         /// </summary>
-        /// <param name="customDashboardSectionType">Type of the razor component to draw.</param>
+        /// <param name="customSectionType">Type of the razor component to draw.</param>
         /// <returns></returns>
-        ICmsConfig AddSection(Type customDashboardSectionType);
+        IPageConfig AddSection(Type customSectionType);
+
+        string Name { get; }
+        string Icon { get; }
+
+        /// <summary>
+        /// Registered sections of the page.
+        /// </summary>
+        IEnumerable<CustomTypeRegistrationConfig> SectionRegistrations { get; }
     }
 
     public interface ICmsConfig : ICollectionConfig
@@ -58,16 +68,16 @@ namespace RapidCMS.Core.Abstractions.Config
         /// <param name="name"></param>
         /// <param name="configure"></param>
         /// <returns></returns>
-        IPageConfig AddPage(string name, Action<IPageConfig> configure);
+        ICmsConfig AddPage(string name, Action<IPageConfig> configure);
 
         /// <summary>
-        /// 
+        /// Add a page to the CMS.
         /// </summary>
         /// <param name="icon"></param>
         /// <param name="name"></param>
         /// <param name="configure"></param>
         /// <returns></returns>
-        IPageConfig AddPage(string icon, string name, Action<IPageConfig> configure);
+        ICmsConfig AddPage(string icon, string name, Action<IPageConfig> configure);
 
         /// <summary>
         /// The CMS homepage.
@@ -107,5 +117,7 @@ namespace RapidCMS.Core.Abstractions.Config
         /// These settings are for advanced or debugging scenarios.
         /// </summary>
         IAdvancedCmsConfig Advanced { get; }
+
+        IEnumerable<IPageConfig> Pages { get; }
     }
 }
